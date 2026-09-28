@@ -2,13 +2,8 @@ import { BurgerConstructorUI } from '@ui';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import {
-  clearBurger,
-} from '../../services/slices/burgerSlice';
-import {
-  clearOrder,
-  createOrder,
-} from '../../services/slices/orderSlice';
+import { clearBurger } from '../../services/slices/burgerSlice';
+import { clearOrder, createOrder } from '../../services/slices/orderSlice';
 import { useDispatch, useSelector } from '../../services/store';
 
 export const BurgerConstructor = (): React.JSX.Element => {
@@ -18,9 +13,7 @@ export const BurgerConstructor = (): React.JSX.Element => {
   const constructorItems = useSelector((state) => state.burger);
   const orderRequest = useSelector((state) => state.order.isLoading);
   const orderModalData = useSelector((state) => state.order.order);
-  const isAuthenticated = useSelector(
-    (state) => state.user.isAuthenticated
-  );
+  const isAuthenticated = useSelector((state) => state.user.isAuthenticated);
 
   const onOrderClick = (): void => {
     if (!constructorItems.bun || orderRequest) {

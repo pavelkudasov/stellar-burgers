@@ -16,6 +16,7 @@ type UserState = {
   user: TUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isAuthChecked: boolean;
   error: string | null;
 };
 
@@ -23,6 +24,7 @@ const initialState: UserState = {
   user: null,
   isAuthenticated: false,
   isLoading: false,
+  isAuthChecked: false,
   error: null,
 };
 
@@ -77,6 +79,7 @@ const userSlice = createSlice({
     clearUser: (state) => {
       state.user = null;
       state.isAuthenticated = false;
+      state.isAuthChecked = true;
       state.error = null;
     },
   },
@@ -90,10 +93,12 @@ const userSlice = createSlice({
         state.isLoading = false;
         state.user = action.payload;
         state.isAuthenticated = true;
+        state.isAuthChecked = true;
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message ?? 'Ошибка авторизации';
+        state.isAuthChecked = true;
       })
 
       .addCase(register.pending, (state) => {
@@ -104,10 +109,12 @@ const userSlice = createSlice({
         state.isLoading = false;
         state.user = action.payload;
         state.isAuthenticated = true;
+        state.isAuthChecked = true;
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message ?? 'Ошибка регистрации';
+        state.isAuthChecked = true;
       })
 
       .addCase(getUser.pending, (state) => {
@@ -117,11 +124,13 @@ const userSlice = createSlice({
         state.isLoading = false;
         state.user = action.payload;
         state.isAuthenticated = true;
+        state.isAuthChecked = true;
       })
       .addCase(getUser.rejected, (state) => {
         state.isLoading = false;
         state.user = null;
         state.isAuthenticated = false;
+        state.isAuthChecked = true;
       })
 
       .addCase(updateUser.pending, (state) => {
@@ -141,6 +150,7 @@ const userSlice = createSlice({
         state.user = null;
         state.isAuthenticated = false;
         state.isLoading = false;
+        state.isAuthChecked = true;
       });
   },
 });

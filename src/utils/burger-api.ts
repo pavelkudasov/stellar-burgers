@@ -1,4 +1,4 @@
-import { setCookie, getCookie } from './cookie';
+import { getCookie, setCookie } from './cookie';
 
 import type { TIngredient, TOrder, TUser } from './types';
 
@@ -11,21 +11,22 @@ type TServerResponse<T = unknown> = {
   success: boolean;
 } & T;
 
-/**
- * The API signals failure with a JSON payload rather than an HTTP error, so the
- * payload is wrapped in a real Error before rejecting. The original body is
- * kept in `cause` for debugging.
- */
 const toApiError = (payload: unknown): Error => {
   const message =
     typeof payload === 'object' &&
     payload !== null &&
     'message' in payload &&
     typeof (payload as { message: unknown }).message === 'string'
-      ? (payload as { message: string }).message
+      ? (
+          payload as {
+            message: string;
+          }
+        ).message
       : 'Не удалось выполнить запрос к серверу';
 
-  return new Error(message, { cause: payload });
+  return new Error(message, {
+    cause: payload,
+  });
 };
 
 type TRefreshResponse = TServerResponse<{
@@ -46,34 +47,51 @@ export const refreshToken = (): Promise<TRefreshResponse> =>
     .then((res) => checkResponse<TRefreshResponse>(res))
     .then((refreshData) => {
       if (!refreshData.success) {
-        return Promise.reject(toApiError(refreshData));
+        throw toApiError(refreshData);
       }
+
       localStorage.setItem('refreshToken', refreshData.refreshToken);
+
       setCookie('accessToken', refreshData.accessToken);
+
       return refreshData;
     });
 
-/* Это предпочтительны способ обновления токена, но допустимы и другие, главное,
-что бы обновление токена работало корректно */
 export const fetchWithRefresh = async <T>(
   url: RequestInfo,
   options: RequestInit
 ): Promise<T> => {
   try {
     const res = await fetch(url, options);
+
     return await checkResponse<T>(res);
   } catch (err) {
-    if ((err as { message: string }).message === 'jwt expired') {
-      const refreshData = await refreshToken();
-      if (options.headers) {
-        (options.headers as Record<string, string>).authorization =
-          refreshData.accessToken;
+    const error = err instanceof Error ? err : new Error('Не удалось выполнить запрос');
+
+    if (error.message === 'jwt expired') {
+      try {
+        const refreshData = await refreshToken();
+
+        const headers = new Headers(options.headers);
+
+        headers.set('authorization', refreshData.accessToken);
+
+        const res = await fetch(url, {
+          ...options,
+          headers,
+        });
+
+        return await checkResponse<T>(res);
+      } catch (refreshError) {
+        if (refreshError instanceof Error) {
+          throw refreshError;
+        }
+
+        throw new Error('Не удалось обновить токен');
       }
-      const res = await fetch(url, options);
-      return await checkResponse<T>(res);
-    } else {
-      return Promise.reject(toApiError(err));
     }
+
+    throw error;
   }
 };
 
@@ -91,16 +109,22 @@ export const getIngredientsApi = (): Promise<TIngredient[]> =>
   fetch(`${URL}/ingredients`)
     .then((res) => checkResponse<TIngredientsResponse>(res))
     .then((data) => {
-      if (data?.success) return data.data;
-      return Promise.reject(toApiError(data));
+      if (data?.success) {
+        return data.data;
+      }
+
+      throw toApiError(data);
     });
 
 export const getFeedsApi = (): Promise<TFeedsResponse> =>
   fetch(`${URL}/orders/all`)
     .then((res) => checkResponse<TFeedsResponse>(res))
     .then((data) => {
-      if (data?.success) return data;
-      return Promise.reject(toApiError(data));
+      if (data?.success) {
+        return data;
+      }
+
+      throw toApiError(data);
     });
 
 export const getOrdersApi = (): Promise<TOrder[]> =>
@@ -111,8 +135,11 @@ export const getOrdersApi = (): Promise<TOrder[]> =>
       authorization: getCookie('accessToken'),
     } as HeadersInit,
   }).then((data) => {
-    if (data?.success) return data.orders;
-    return Promise.reject(toApiError(data));
+    if (data?.success) {
+      return data.orders;
+    }
+
+    throw toApiError(data);
   });
 
 type TNewOrderResponse = TServerResponse<{
@@ -131,8 +158,11 @@ export const orderBurgerApi = (data: string[]): Promise<TNewOrderResponse> =>
       ingredients: data,
     }),
   }).then((data) => {
-    if (data?.success) return data;
-    return Promise.reject(toApiError(data));
+    if (data?.success) {
+      return data;
+    }
+
+    throw toApiError(data);
   });
 
 type TOrderResponse = TServerResponse<{
@@ -169,8 +199,11 @@ export const registerUserApi = (data: TRegisterData): Promise<TAuthResponse> =>
   })
     .then((res) => checkResponse<TAuthResponse>(res))
     .then((data) => {
-      if (data?.success) return data;
-      return Promise.reject(toApiError(data));
+      if (data?.success) {
+        return data;
+      }
+
+      throw toApiError(data);
     });
 
 export type TLoginData = {
@@ -188,8 +221,11 @@ export const loginUserApi = (data: TLoginData): Promise<TAuthResponse> =>
   })
     .then((res) => checkResponse<TAuthResponse>(res))
     .then((data) => {
-      if (data?.success) return data;
-      return Promise.reject(toApiError(data));
+      if (data?.success) {
+        return data;
+      }
+
+      throw toApiError(data);
     });
 
 export const forgotPasswordApi = (data: { email: string }): Promise<TServerResponse> =>
@@ -202,8 +238,11 @@ export const forgotPasswordApi = (data: { email: string }): Promise<TServerRespo
   })
     .then((res) => checkResponse<TServerResponse>(res))
     .then((data) => {
-      if (data?.success) return data;
-      return Promise.reject(toApiError(data));
+      if (data?.success) {
+        return data;
+      }
+
+      throw toApiError(data);
     });
 
 export const resetPasswordApi = (data: {
@@ -219,11 +258,16 @@ export const resetPasswordApi = (data: {
   })
     .then((res) => checkResponse<TServerResponse>(res))
     .then((data) => {
-      if (data?.success) return data;
-      return Promise.reject(toApiError(data));
+      if (data?.success) {
+        return data;
+      }
+
+      throw toApiError(data);
     });
 
-type TUserResponse = TServerResponse<{ user: TUser }>;
+type TUserResponse = TServerResponse<{
+  user: TUser;
+}>;
 
 export const getUserApi = (): Promise<TUserResponse> =>
   fetchWithRefresh<TUserResponse>(`${URL}/auth/user`, {

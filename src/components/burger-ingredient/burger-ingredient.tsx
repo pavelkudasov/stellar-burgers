@@ -20,9 +20,8 @@ export const BurgerIngredient = memo(function BurgerIngredient({
       ? constructorItems.bun?._id === ingredient._id
         ? 2
         : 0
-      : constructorItems.ingredients.filter(
-          (item) => item._id === ingredient._id
-        ).length;
+      : constructorItems.ingredients.filter((item) => item._id === ingredient._id)
+          .length;
 
   const handleAdd = (): void => {
     if (ingredient.type === 'bun') {

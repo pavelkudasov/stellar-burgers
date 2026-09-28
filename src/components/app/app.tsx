@@ -1,4 +1,4 @@
-import { AppHeader, IngredientDetails, OrderInfo } from '@components';
+import { AppHeader, IngredientDetails, Modal, OrderInfo } from '@components';
 import {
   ConstructorPage,
   Feed,
@@ -8,65 +8,68 @@ import {
   Profile,
   ProfileOrders,
   Register,
-  ResetPassword
+  ResetPassword,
 } from '@pages';
-import { fetchIngredients } from '@services/slices/ingredientsSlice';
-import { getUser } from '@services/slices/userSlice';
-import { useDispatch, useSelector } from '@services/store';
 import { Preloader } from '@ui';
 import { useEffect } from 'react';
-import {
-  Route,
-  Routes,
-  useLocation,
-  useNavigate
-} from 'react-router-dom';
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+
+import { fetchIngredients } from '@services/slices/ingredientsSlice';
+import { clearUser, getUser } from '@services/slices/userSlice';
+import { useDispatch, useSelector } from '@services/store';
 
 import '../../index.css';
+
 import styles from './app.module.css';
 
-const ProtectedRoute = ({
-  children
-}: {
+type LocationState = {
+  background?: ReturnType<typeof useLocation>;
+};
+
+type ProtectedRouteProps = {
   children: React.JSX.Element;
-}): React.JSX.Element => {
+  onlyUnAuth?: boolean;
+};
+
+const ProtectedRoute = ({
+  children,
+  onlyUnAuth = false,
+}: ProtectedRouteProps): React.JSX.Element => {
   const user = useSelector((state) => state.user.user);
+  const isAuthChecked = useSelector((state) => state.user.isAuthChecked);
+
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user) {
+    if (!isAuthChecked) {
+      return;
+    }
+
+    if (onlyUnAuth && user) {
+      void navigate('/', { replace: true });
+      return;
+    }
+
+    if (!onlyUnAuth && !user) {
       void navigate('/login', {
         replace: true,
         state: {
-          from: location.pathname
-        }
+          from: location.pathname,
+        },
       });
     }
-  }, [user, navigate, location.pathname]);
+  }, [isAuthChecked, onlyUnAuth, user, navigate, location.pathname]);
 
-  if (!user) {
+  if (!isAuthChecked) {
     return <Preloader />;
   }
 
-  return children;
-};
+  if (onlyUnAuth && user) {
+    return <Preloader />;
+  }
 
-const AuthRoute = ({
-  children
-}: {
-  children: React.JSX.Element;
-}): React.JSX.Element => {
-  const user = useSelector((state) => state.user.user);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user) {
-      void navigate('/', { replace: true });
-    }
-  }, [user, navigate]);
-
-  if (user) {
+  if (!onlyUnAuth && !user) {
     return <Preloader />;
   }
 
@@ -76,34 +79,39 @@ const AuthRoute = ({
 const App = (): React.JSX.Element => {
   const dispatch = useDispatch();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const user = useSelector((state) => state.user.user);
+  const isAuthChecked = useSelector((state) => state.user.isAuthChecked);
 
-  const ingredients = useSelector(
-    (state) => state.ingredients.items
-  );
+  const ingredients = useSelector((state) => state.ingredients.items);
 
-  const isIngredientsLoading = useSelector(
-    (state) => state.ingredients.isLoading
-  );
+  const isIngredientsLoading = useSelector((state) => state.ingredients.isLoading);
 
-  const ingredientsError = useSelector(
-    (state) => state.ingredients.error
-  );
+  const ingredientsError = useSelector((state) => state.ingredients.error);
 
-  const backgroundLocation = location.state?.background;
+  const locationState = location.state as LocationState | null;
+
+  const backgroundLocation = locationState?.background ?? location;
 
   useEffect(() => {
     if (!ingredients.length) {
       void dispatch(fetchIngredients());
     }
 
-    if (localStorage.getItem('refreshToken') && !user) {
-      void dispatch(getUser());
+    if (isAuthChecked) {
+      return;
     }
-  }, [dispatch, ingredients.length, user]);
 
-  if (isIngredientsLoading) {
+    const refreshToken = localStorage.getItem('refreshToken');
+
+    if (refreshToken) {
+      void dispatch(getUser());
+    } else {
+      dispatch(clearUser());
+    }
+  }, [dispatch, ingredients.length, isAuthChecked]);
+
+  if (isIngredientsLoading || !isAuthChecked) {
     return <Preloader />;
   }
 
@@ -119,16 +127,10 @@ const App = (): React.JSX.Element => {
     <div className={styles.app}>
       <AppHeader />
 
-      <Routes location={backgroundLocation || location}>
-        <Route
-          path="/"
-          element={<ConstructorPage />}
-        />
+      <Routes location={backgroundLocation}>
+        <Route path="/" element={<ConstructorPage />} />
 
-        <Route
-          path="/feed"
-          element={<Feed />}
-        />
+        <Route path="/feed" element={<Feed />} />
 
         <Route
           path="/profile"
@@ -151,48 +153,42 @@ const App = (): React.JSX.Element => {
         <Route
           path="/login"
           element={
-            <AuthRoute>
+            <ProtectedRoute onlyUnAuth>
               <Login />
-            </AuthRoute>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/register"
           element={
-            <AuthRoute>
+            <ProtectedRoute onlyUnAuth>
               <Register />
-            </AuthRoute>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/forgot-password"
           element={
-            <AuthRoute>
+            <ProtectedRoute onlyUnAuth>
               <ForgotPassword />
-            </AuthRoute>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/reset-password"
           element={
-            <AuthRoute>
+            <ProtectedRoute onlyUnAuth>
               <ResetPassword />
-            </AuthRoute>
+            </ProtectedRoute>
           }
         />
 
-        <Route
-          path="/ingredients/:id"
-          element={<IngredientDetails />}
-        />
+        <Route path="/ingredients/:id" element={<IngredientDetails />} />
 
-        <Route
-          path="/feed/:id"
-          element={<OrderInfo />}
-        />
+        <Route path="/feed/:id" element={<OrderInfo />} />
 
         <Route
           path="/profile/orders/:id"
@@ -203,29 +199,51 @@ const App = (): React.JSX.Element => {
           }
         />
 
-        <Route
-          path="*"
-          element={<NotFound404 />}
-        />
+        <Route path="*" element={<NotFound404 />} />
       </Routes>
 
-      {backgroundLocation && (
+      {locationState?.background && (
         <Routes>
           <Route
             path="/ingredients/:id"
-            element={<IngredientDetails />}
+            element={
+              <Modal
+                title="Детали ингредиента"
+                onClose={() => {
+                  void navigate(-1);
+                }}
+              >
+                <IngredientDetails />
+              </Modal>
+            }
           />
 
           <Route
             path="/feed/:id"
-            element={<OrderInfo />}
+            element={
+              <Modal
+                title="Детали заказа"
+                onClose={() => {
+                  void navigate(-1);
+                }}
+              >
+                <OrderInfo />
+              </Modal>
+            }
           />
 
           <Route
             path="/profile/orders/:id"
             element={
               <ProtectedRoute>
-                <OrderInfo />
+                <Modal
+                  title="Детали заказа"
+                  onClose={() => {
+                    void navigate(-1);
+                  }}
+                >
+                  <OrderInfo />
+                </Modal>
               </ProtectedRoute>
             }
           />

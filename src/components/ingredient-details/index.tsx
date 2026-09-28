@@ -1,4 +1,5 @@
 import { Preloader, IngredientDetailsUI } from '@ui';
+
 import { useSelector } from '../../services/store';
 
 export const IngredientDetails = (): React.JSX.Element => {
