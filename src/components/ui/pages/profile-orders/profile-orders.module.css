@@ -4,12 +4,24 @@
 
 .main {
   display: flex;
-  width: 1240px;
-  height: 100%;
+  width: min(1240px, 100%);
+  min-height: 0;
   margin: 0 auto;
   overflow: hidden;
 }
 
 .orders {
   width: 100%;
+  overflow-y: auto;
+}
+
+@media (width <= 800px) {
+  .main {
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .menu {
+    width: 100%;
+  }
 }

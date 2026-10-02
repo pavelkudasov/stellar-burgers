@@ -10,7 +10,11 @@ export const ProfileOrdersUI = ({ orders }: ProfileOrdersUIProps): React.JSX.Ele
       <ProfileMenu />
     </div>
     <div className={`mt-10 ${styles.orders}`}>
-      <OrdersList orders={orders} />
+      {orders.length ? (
+        <OrdersList orders={orders} />
+      ) : (
+        <p className="text text_type_main-default">У вас пока нет заказов.</p>
+      )}
     </div>
   </main>
 );

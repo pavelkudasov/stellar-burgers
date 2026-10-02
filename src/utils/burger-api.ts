@@ -175,7 +175,15 @@ export const getOrderByNumberApi = (number: number): Promise<TOrderResponse> =>
     headers: {
       'Content-Type': 'application/json',
     },
-  }).then((res) => checkResponse<TOrderResponse>(res));
+  })
+    .then((res) => checkResponse<TOrderResponse>(res))
+    .then((data) => {
+      if (data?.success) {
+        return data;
+      }
+
+      throw toApiError(data);
+    });
 
 export type TRegisterData = {
   email: string;

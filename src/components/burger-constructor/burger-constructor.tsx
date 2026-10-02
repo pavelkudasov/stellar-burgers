@@ -31,12 +31,13 @@ export const BurgerConstructor = (): React.JSX.Element => {
       constructorItems.bun._id,
     ];
 
-    void dispatch(createOrder(ingredients));
+    void dispatch(createOrder(ingredients))
+      .unwrap()
+      .then(() => dispatch(clearBurger()), () => undefined);
   };
 
   const closeOrderModal = (): void => {
     dispatch(clearOrder());
-    dispatch(clearBurger());
   };
 
   const price = useMemo(

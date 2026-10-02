@@ -1,4 +1,4 @@
-import { getOrdersApi, orderBurgerApi } from '@api';
+import { getOrderByNumberApi, getOrdersApi, orderBurgerApi } from '@api';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 import type { PayloadAction } from '@reduxjs/toolkit';
@@ -6,6 +6,9 @@ import type { TOrder } from '@utils-types';
 
 type OrderState = {
   order: TOrder | null;
+  orderDetails: TOrder | null;
+  isOrderDetailsLoading: boolean;
+  orderDetailsError: string | null;
   orders: TOrder[];
   isLoading: boolean;
   isOrdersLoading: boolean;
@@ -15,6 +18,9 @@ type OrderState = {
 
 const initialState: OrderState = {
   order: null,
+  orderDetails: null,
+  isOrderDetailsLoading: false,
+  orderDetailsError: null,
   orders: [],
   isLoading: false,
   isOrdersLoading: false,
@@ -33,6 +39,18 @@ export const createOrder = createAsyncThunk(
 export const fetchOrders = createAsyncThunk('order/fetchOrders', async () => {
   return await getOrdersApi();
 });
+
+export const fetchOrderByNumber = createAsyncThunk(
+  'order/fetchOrderByNumber',
+  async (number: number) => {
+    const response = await getOrderByNumberApi(number);
+    const order = response.orders[0];
+    if (!order) {
+      throw new Error('Заказ не найден');
+    }
+    return order;
+  }
+);
 
 const orderSlice = createSlice({
   name: 'order',
@@ -70,6 +88,21 @@ const orderSlice = createSlice({
         state.isOrdersLoading = false;
         state.ordersError =
           action.error.message ?? 'Не удалось загрузить историю заказов';
+      })
+
+      .addCase(fetchOrderByNumber.pending, (state) => {
+        state.isOrderDetailsLoading = true;
+        state.orderDetailsError = null;
+        state.orderDetails = null;
+      })
+      .addCase(fetchOrderByNumber.fulfilled, (state, action) => {
+        state.isOrderDetailsLoading = false;
+        state.orderDetails = action.payload;
+      })
+      .addCase(fetchOrderByNumber.rejected, (state, action) => {
+        state.isOrderDetailsLoading = false;
+        state.orderDetailsError =
+          action.error.message ?? 'Не удалось загрузить заказ';
       });
   },
 });
