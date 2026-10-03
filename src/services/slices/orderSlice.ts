@@ -1,0 +1,112 @@
+import { getOrderByNumberApi, getOrdersApi, orderBurgerApi } from '@api';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+
+import type { PayloadAction } from '@reduxjs/toolkit';
+import type { TOrder } from '@utils-types';
+
+type OrderState = {
+  order: TOrder | null;
+  orderDetails: TOrder | null;
+  isOrderDetailsLoading: boolean;
+  orderDetailsError: string | null;
+  orders: TOrder[];
+  isLoading: boolean;
+  isOrdersLoading: boolean;
+  error: string | null;
+  ordersError: string | null;
+};
+
+const initialState: OrderState = {
+  order: null,
+  orderDetails: null,
+  isOrderDetailsLoading: false,
+  orderDetailsError: null,
+  orders: [],
+  isLoading: false,
+  isOrdersLoading: false,
+  error: null,
+  ordersError: null,
+};
+
+export const createOrder = createAsyncThunk(
+  'order/createOrder',
+  async (ingredients: string[]) => {
+    const response = await orderBurgerApi(ingredients);
+    return response.order;
+  }
+);
+
+export const fetchOrders = createAsyncThunk('order/fetchOrders', async () => {
+  return await getOrdersApi();
+});
+
+export const fetchOrderByNumber = createAsyncThunk(
+  'order/fetchOrderByNumber',
+  async (number: number) => {
+    const response = await getOrderByNumberApi(number);
+    const order = response.orders[0];
+    if (!order) {
+      throw new Error('Заказ не найден');
+    }
+    return order;
+  }
+);
+
+const orderSlice = createSlice({
+  name: 'order',
+  initialState,
+  reducers: {
+    clearOrder: (state) => {
+      state.order = null;
+      state.error = null;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(createOrder.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(createOrder.fulfilled, (state, action: PayloadAction<TOrder>) => {
+        state.isLoading = false;
+        state.order = action.payload;
+      })
+      .addCase(createOrder.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message ?? 'Не удалось оформить заказ';
+      })
+
+      .addCase(fetchOrders.pending, (state) => {
+        state.isOrdersLoading = true;
+        state.ordersError = null;
+      })
+      .addCase(fetchOrders.fulfilled, (state, action: PayloadAction<TOrder[]>) => {
+        state.isOrdersLoading = false;
+        state.orders = action.payload;
+      })
+      .addCase(fetchOrders.rejected, (state, action) => {
+        state.isOrdersLoading = false;
+        state.ordersError =
+          action.error.message ?? 'Не удалось загрузить историю заказов';
+      })
+
+      .addCase(fetchOrderByNumber.pending, (state) => {
+        state.isOrderDetailsLoading = true;
+        state.orderDetailsError = null;
+        state.orderDetails = null;
+      })
+      .addCase(fetchOrderByNumber.fulfilled, (state, action) => {
+        state.isOrderDetailsLoading = false;
+        state.orderDetails = action.payload;
+      })
+      .addCase(fetchOrderByNumber.rejected, (state, action) => {
+        state.isOrderDetailsLoading = false;
+        state.orderDetailsError =
+          action.error.message ?? 'Не удалось загрузить заказ';
+      });
+  },
+});
+
+export const { clearOrder } = orderSlice.actions;
+
+export default orderSlice.reducer;

@@ -1,7 +1,7 @@
 import {
+  AddButton,
   Counter,
   CurrencyIcon,
-  AddButton,
 } from '@krgaa/react-developer-burger-ui-components';
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
@@ -21,14 +21,18 @@ export const BurgerIngredientUI = memo(function BurgerIngredientUI({
   return (
     <li className={styles.container}>
       <Link className={styles.article} to={`/ingredients/${_id}`} state={locationState}>
-        {count && <Counter count={count} />}
+        {count > 0 && <Counter count={count} />}
+
         <img src={image} alt="картинка ингредиента." />
+
         <div className={`${styles.cost} mt-2 mb-2`}>
           <p className="text text_type_digits-default mr-2">{price}</p>
           <CurrencyIcon type="primary" />
         </div>
+
         <p className={`text text_type_main-default ${styles.text}`}>{name}</p>
       </Link>
+
       <AddButton
         text="Добавить"
         onClick={handleAdd}
