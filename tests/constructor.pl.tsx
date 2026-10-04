@@ -15,9 +15,18 @@ test.describe('Конструктор бургера', () => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'Соберите бургер' })).toBeVisible();
 
+    await expect(page.getByTestId('constructor-bun-1')).toHaveCount(0);
+    await expect(page.getByTestId('constructor-bun-2')).toHaveCount(0);
+    await expect(
+      page.getByTestId('constructor').getByText('Выберите булки')
+    ).toHaveCount(2);
     await page.getByRole('button', { name: 'Добавить' }).nth(0).click();
     await expect(page.getByTestId('constructor-bun-1')).toContainText('Тестовая булка');
+    await expect(page.getByTestId('constructor-bun-2')).toContainText('Тестовая булка');
 
+    await expect(
+      page.getByTestId('constructor-ingredients').getByText('Выберите начинку')
+    ).toBeVisible();
     await page.getByRole('button', { name: 'Добавить' }).nth(1).click();
     await expect(page.getByTestId('constructor-ingredients')).toContainText(
       'Тестовая котлета'
@@ -80,14 +89,16 @@ test.describe('Конструктор бургера', () => {
       'Тестовая котлета'
     );
 
+    const modals = page.locator('#modals');
+    await expect(modals.getByTestId('order-number')).toHaveCount(0);
     await page.getByRole('button', { name: 'Оформить заказ' }).click();
-    await expect(page.getByTestId('order-number')).toHaveText('123456');
+    await expect(modals.getByTestId('order-number')).toHaveText('123456');
     await expect(page.getByTestId('constructor-bun-1')).toHaveCount(0);
     await expect(page.getByTestId('constructor-ingredients')).toContainText(
       'Выберите начинку'
     );
 
     await page.getByRole('button', { name: 'Закрыть' }).click();
-    await expect(page.getByTestId('order-number')).toHaveCount(0);
+    await expect(modals.getByTestId('order-number')).toHaveCount(0);
   });
 });

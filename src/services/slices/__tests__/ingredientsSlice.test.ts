@@ -1,6 +1,6 @@
-import type { TIngredient } from '@utils-types';
-
 import ingredientsReducer, { fetchIngredients } from '../ingredientsSlice';
+
+import type { TIngredient } from '@utils-types';
 
 const ingredient: TIngredient = {
   _id: 'bun-test',

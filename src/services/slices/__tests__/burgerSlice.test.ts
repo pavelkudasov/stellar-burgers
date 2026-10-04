@@ -1,5 +1,3 @@
-import type { TConstructorIngredient } from '@utils-types';
-
 import burgerReducer, {
   addBun,
   addIngredient,
@@ -8,6 +6,8 @@ import burgerReducer, {
   moveIngredientUp,
   removeIngredient,
 } from '../burgerSlice';
+
+import type { TConstructorIngredient } from '@utils-types';
 
 const bun: TConstructorIngredient = {
   _id: 'bun-test',
@@ -26,16 +26,16 @@ const bun: TConstructorIngredient = {
 
 const fillingA: TConstructorIngredient = {
   ...bun,
-  _id: 'filling-a',
-  id: 'filling-a',
+  _id: 'shared-patty',
+  id: 'constructor-a',
   name: 'Начинка A',
   type: 'main',
 };
 
 const fillingB: TConstructorIngredient = {
   ...bun,
-  _id: 'filling-b',
-  id: 'filling-b',
+  _id: 'shared-patty',
+  id: 'constructor-b',
   name: 'Начинка B',
   type: 'main',
 };
@@ -62,11 +62,11 @@ describe('burger constructor reducer', () => {
     });
   });
 
-  it('removes the ingredient with the matching constructor id', () => {
+  it('removes only the ingredient with the matching constructor id', () => {
     expect(
       burgerReducer(
         { bun, ingredients: [fillingA, fillingB] },
-        removeIngredient('filling-a')
+        removeIngredient('constructor-a')
       )
     ).toEqual({ bun, ingredients: [fillingB] });
   });
